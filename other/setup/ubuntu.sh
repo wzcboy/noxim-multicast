@@ -17,7 +17,7 @@ then
 fi
 
 git clone https://github.com/wzcboy/noxim-multicast
-cd noxim/bin
+cd noxim-multicast/bin
 mkdir -p libs
 cd libs
 
