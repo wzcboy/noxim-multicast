@@ -16,7 +16,7 @@ then
         sudo apt-get -y install git
 fi
 
-git clone https://github.com/davidepatti/noxim
+git clone https://github.com/wzcboy/noxim-multicast
 cd noxim/bin
 mkdir -p libs
 cd libs
