@@ -43,11 +43,11 @@ Installation & Quick Start
 If you are working on Ubuntu, you can install noxim and all the dependencies with the following command:
 (**BE sure of copying the entire line, i.e., ending with "ubuntu.sh**)
 
-    bash <(wget -qO- --no-check-certificate https://raw.githubusercontent.com/davidepatti/noxim/master/other/setup/ubuntu.sh)
+    bash <(wget -qO- --no-check-certificate https://raw.githubusercontent.com/wzcboy/noxim-multicast/master/other/setup/ubuntu.sh)
 
 Similarly for macOS:
 
-    /bin/zsh -c "$(curl -fsSL https://raw.githubusercontent.com/davidepatti/noxim/master/other/setup/macos.zsh)"
+    /bin/zsh -c "$(curl -fsSL https://raw.githubusercontent.com/wzcboy/noxim-multicast/master/other/setup/macos.zsh)"
 
 Or, to get just the latest master sources, you can run:
 
