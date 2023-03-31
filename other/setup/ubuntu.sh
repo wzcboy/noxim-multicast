@@ -16,12 +16,12 @@ then
         sudo apt-get -y install git
 fi
 
-git clone git@//github.com/wzcboy/noxim-multicast
+git clone git@//github.com/wzcboy/noxim-multicast.git
 cd noxim-multicast/bin
 mkdir -p libs
 cd libs
 
-git clone git@//github.com/jbeder/yaml-cpp
+git clone git@//github.com/jbeder/yaml-cpp.git
 cd yaml-cpp/
 git checkout -b r0.6.0 yaml-cpp-0.6.0
 mkdir -p lib
