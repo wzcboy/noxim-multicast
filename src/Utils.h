@@ -53,6 +53,48 @@ static onullstream LOG;
 
 #endif
 
+inline Coord id2Coord(int id)
+{
+    Coord coord;
+    if (GlobalParams::topology == TOPOLOGY_MESH)
+    {
+        coord.x = id % GlobalParams::mesh_dim_x;
+        coord.y = id / GlobalParams::mesh_dim_x;
+
+        assert(coord.x < GlobalParams::mesh_dim_x);
+        assert(coord.y < GlobalParams::mesh_dim_y);
+    }
+    else // other delta topologies
+    {
+        id = id - GlobalParams::n_delta_tiles;
+        coord.x = id / (int)(GlobalParams::n_delta_tiles/2);
+        coord.y = id % (int)(GlobalParams::n_delta_tiles/2);
+
+        assert(coord.x < log2(GlobalParams::n_delta_tiles));
+        assert(coord.y < (GlobalParams::n_delta_tiles/2));
+
+    }
+    return coord;
+}
+
+inline int coord2Id(const Coord & coord)
+{
+    int id;
+    if (GlobalParams::topology == TOPOLOGY_MESH)
+    {
+        id = (coord.y * GlobalParams::mesh_dim_x) + coord.x;
+        assert(id < GlobalParams::mesh_dim_x * GlobalParams::mesh_dim_y);
+    }
+    else
+    {   //use only for switch bloc in delta topologies
+        id = (coord.x * (GlobalParams::n_delta_tiles/2)) + coord.y + GlobalParams::n_delta_tiles;
+        assert(id > (GlobalParams::n_delta_tiles-1));
+    }
+
+    return id;
+}
+
+
 // Output overloading
 
 inline ostream & operator <<(ostream & os, const Flit & flit)
@@ -139,8 +181,27 @@ inline ostream & operator <<(ostream & os, const Coord & coord)
     return os;
 }
 
-// Trace overloading
+inline ostream & operator <<(ostream & os, const MyPacket & pkt)
+{
+    os << "(";
+    switch (pkt.packet_type) {
+        case MYPACKET_TYPE_UNICAST:
+            os << "UNICAST_";
+            break;
+        case MYPACKET_TYPE_MULTICAST:
+            os << "MULTICAST_";
+            break;
+        case MYPACKET_TYPE_BROADCAST:
+            os << "BROADCAST_";
+            break;
+    }
+    os <<  pkt.timestamp << ", " << id2Coord(pkt.src_id) << "->" << pkt.p0 << ", " << pkt.p1
+       << " VC " << pkt.vc_id << ")";
 
+    return os;
+}
+
+// Trace overloading
 inline void sc_trace(sc_trace_file * &tf, const Flit & flit, string & name)
 {
     sc_trace(tf, flit.src_id, name + ".src_id");
@@ -166,48 +227,24 @@ inline void sc_trace(sc_trace_file * &tf, const ChannelStatus & bs, string & nam
     sc_trace(tf, bs.available, name + ".available");
 }
 
+inline void sc_trace(sc_trace_file * &tf, const Coord & coord, string & name)
+{
+    sc_trace(tf, coord.x, name + ".x");
+    sc_trace(tf, coord.y, name + ".y");
+}
+
+inline void sc_trace(sc_trace_file * &tf, const MyPacket & pkt, string & name)
+{
+    sc_trace(tf, pkt.src_id, name + ".src_id");
+    sc_trace(tf, pkt.p0.x, name + ".p0.x");
+    sc_trace(tf, pkt.p0.y, name + ".p0.y");
+    sc_trace(tf, pkt.p1.x, name + ".p1.x");
+    sc_trace(tf, pkt.p1.y, name + ".p1.y");
+    sc_trace(tf, pkt.packet_type, name + ".packet_type");
+    sc_trace(tf, pkt.timestamp, name + ".timestamp");
+}
 // Misc common functions
 
-inline Coord id2Coord(int id)
-{
-    Coord coord;
-    if (GlobalParams::topology == TOPOLOGY_MESH)
-    {
-        coord.x = id % GlobalParams::mesh_dim_x;
-        coord.y = id / GlobalParams::mesh_dim_x;
-
-        assert(coord.x < GlobalParams::mesh_dim_x);
-        assert(coord.y < GlobalParams::mesh_dim_y);
-    }
-    else // other delta topologies
-    {
-        id = id - GlobalParams::n_delta_tiles;
-        coord.x = id / (int)(GlobalParams::n_delta_tiles/2);
-        coord.y = id % (int)(GlobalParams::n_delta_tiles/2);
-
-        assert(coord.x < log2(GlobalParams::n_delta_tiles));
-        assert(coord.y < (GlobalParams::n_delta_tiles/2));
-
-    }
-    return coord;
-}
-
-inline int coord2Id(const Coord & coord)
-{
-    int id;
-    if (GlobalParams::topology == TOPOLOGY_MESH)
-    {
-        id = (coord.y * GlobalParams::mesh_dim_x) + coord.x;
-        assert(id < GlobalParams::mesh_dim_x * GlobalParams::mesh_dim_y);
-    }
-    else
-    {   //use only for switch bloc in delta topologies
-        id = (coord.x * (GlobalParams::n_delta_tiles/2)) + coord.y + GlobalParams::n_delta_tiles;
-        assert(id > (GlobalParams::n_delta_tiles-1));
-    }
-
-    return id;
-}
 
 inline bool sameRadioHub(int id1, int id2)
 {

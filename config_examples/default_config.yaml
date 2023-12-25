@@ -13,12 +13,12 @@
 #   BUTTERFLY, BASELINE, and OMEGA are Delta Network topologies
 # topology: MESH
 # X and Y mesh sizes
-mesh_dim_x: 4
-mesh_dim_y: 4
+mesh_dim_x: 11
+mesh_dim_y: 12
 # number of flits for each router buffer
 buffer_depth: 4
 # size of flits, in bits
-flit_size: 32
+flit_size: 64
 # lenght in mm of router to hub connection
 r2h_link_length: 2.0
 # lenght in mm of router to router connection
@@ -36,7 +36,7 @@ n_virtual_channels: 1
 #   TABLE_BASED
 # Each of the above labels should match a corresponding
 # implementation in the routingAlgorithms source code directory
-routing_algorithm: XY
+routing_algorithm: REC_BROADCAST
 routing_table_filename: ""
 
 # Routing specific parameters
@@ -126,7 +126,7 @@ stats_warm_up_time: 1000
 detailed: false
 # stop after a given amount of load has been processed
 max_volume_to_be_drained: 0
-show_buffer_stats: false
+show_buffer_stats: true
 
 # Winoc
 # enable wireless, when false, all wireless channel configuration is
@@ -160,7 +160,7 @@ probability_of_retransmission: 0.01
 #   TRAFFIC_BIT_REVERSAL
 #   TRAFFIC_SHUFFLE
 #   TRAFFIC_BUTTERFLY
-traffic_distribution: TRAFFIC_RANDOM
+traffic_distribution: TRAFFIC_MULTICAST
 # when traffic table based is specified, use the following
 # configuration file
 traffic_table_filename: "t.txt"

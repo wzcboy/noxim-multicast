@@ -53,24 +53,24 @@ SC_MODULE(NoC)
     sc_signal_NSWEH<bool> **req;
     sc_signal_NSWEH<bool> **ack;
     sc_signal_NSWEH<TBufferFullStatus> **buffer_full_status;
-    sc_signal_NSWEH<Flit> **flit;
+    sc_signal_NSWEH<MyPacket> **flit;
     sc_signal_NSWE<int> **free_slots;
 
     // NoP
     sc_signal_NSWE<NoP_data> **nop_data;
 
     //signals for connecting Core2Hub (just to test wireless in Butterfly)
-    sc_signal<Flit> *flit_from_hub;
-    sc_signal<Flit> *flit_to_hub;
+//    sc_signal<Flit> *flit_from_hub;
+//    sc_signal<Flit> *flit_to_hub;
 
-    sc_signal<bool> *req_from_hub;
-    sc_signal<bool> *req_to_hub;
+//    sc_signal<bool> *req_from_hub;
+//    sc_signal<bool> *req_to_hub;
+//
+//    sc_signal<bool> *ack_from_hub;
+//    sc_signal<bool> *ack_to_hub;
 
-    sc_signal<bool> *ack_from_hub;
-    sc_signal<bool> *ack_to_hub;
-
-    sc_signal<TBufferFullStatus> *buffer_full_status_from_hub;
-    sc_signal<TBufferFullStatus> *buffer_full_status_to_hub;
+//    sc_signal<TBufferFullStatus> *buffer_full_status_from_hub;
+//    sc_signal<TBufferFullStatus> *buffer_full_status_to_hub;
 
 
 
@@ -79,9 +79,9 @@ SC_MODULE(NoC)
     Tile ** core;
 
     map<int, Hub*> hub;
-    map<int, Channel*> channel;
+//    map<int, Channel*> channel;
 
-    TokenRing* token_ring;
+//    TokenRing* token_ring;
 
     // Global tables
     GlobalRoutingTable grtable;
@@ -97,12 +97,12 @@ SC_MODULE(NoC)
 	if (GlobalParams::topology == TOPOLOGY_MESH)
 	    // Build the Mesh
 	    buildMesh();
-	else if (GlobalParams::topology == TOPOLOGY_BUTTERFLY)
-        buildButterfly(); 
-	else if (GlobalParams::topology == TOPOLOGY_BASELINE)
-	    buildBaseline();
-	else if (GlobalParams::topology == TOPOLOGY_OMEGA)
-	    buildOmega();
+//	else if (GlobalParams::topology == TOPOLOGY_BUTTERFLY)
+//        buildButterfly();
+//	else if (GlobalParams::topology == TOPOLOGY_BASELINE)
+//	    buildBaseline();
+//	else if (GlobalParams::topology == TOPOLOGY_OMEGA)
+//	    buildOmega();
 	else {
 	    cerr << "ERROR: Topology " << GlobalParams::topology << " is not yet supported." << endl;
 	    exit(0);

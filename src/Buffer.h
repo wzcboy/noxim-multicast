@@ -12,10 +12,11 @@
 #define __NOXIMBUFFER_H__
 
 #include <cassert>
-#include <queue>
+#include <deque>
 #include "DataStructs.h"
 using namespace std;
 
+template <typename T>
 class Buffer {
 
   public:
@@ -33,15 +34,17 @@ class Buffer {
 
     bool IsEmpty() const;	// Returns true if buffer is empty
 
-    virtual void Drop(const Flit & flit) const;	// Called by Push() when buffer is full
+    virtual void Drop(const T & flit) const;	// Called by Push() when buffer is full
 
     virtual void Empty() const;	// Called by Pop() when buffer is empty
 
-    void Push(const Flit & flit);	// Push a flit. Calls Drop method if buffer is full
+    void Push(const T & flit);	// Push a flit. Calls Drop method if buffer is full
 
-    Flit Pop();		// Pop a flit
+    T Pop();		// Pop a flit
 
-    Flit Front() const;	// Return a copy of the first flit in the buffer
+    T Front() const;	// Return a copy of the first flit in the buffer
+
+    void updateFront(const T& f);   // update front packet
 
     unsigned int Size() const;
 
@@ -71,7 +74,7 @@ class Buffer {
 
     unsigned int max_buffer_size;
 
-    queue < Flit > buffer;
+    deque < T > buffer;
 
     unsigned int max_occupancy;
     double hold_time, last_event, hold_time_sum;
@@ -82,7 +85,7 @@ class Buffer {
     void UpdateMeanOccupancy();
 };
 
-typedef Buffer BufferBank[MAX_VIRTUAL_CHANNELS];
-
+typedef Buffer<Flit> BufferBank[MAX_VIRTUAL_CHANNELS];
+typedef Buffer<MyPacket> BufferPacketBank[MAX_VIRTUAL_CHANNELS];
 
 #endif

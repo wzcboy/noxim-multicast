@@ -74,6 +74,8 @@ using namespace std;
 #define TRAFFIC_BUTTERFLY      "TRAFFIC_BUTTERFLY"
 #define TRAFFIC_LOCAL	       "TRAFFIC_LOCAL"
 #define TRAFFIC_ULOCAL	       "TRAFFIC_ULOCAL"
+#define TRAFFIC_MULTICAST      "TRAFFIC_MULTICAST"
+#define TRAFFIC_TEST           "TRAFFIC_TEST"
 
 // Verbosity levels
 #define VERBOSE_OFF            "VERBOSE_OFF"

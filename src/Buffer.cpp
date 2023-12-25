@@ -11,13 +11,15 @@
 #include "Buffer.h"
 #include "Utils.h"
 
-Buffer::Buffer()
+template <typename T>
+Buffer<T>::Buffer()
 {
   SetMaxBufferSize(GlobalParams::buffer_depth);
   max_occupancy = 0;
   hold_time = 0.0;
   last_event = 0.0;
   hold_time_sum = 0.0;
+
   previous_occupancy = 0;
   mean_occupancy = 0.0;
   true_buffer = true;
@@ -26,147 +28,157 @@ Buffer::Buffer()
   deadlock_detected = false;
 }
 
-
-void Buffer::setLabel(string l)
+template <typename T>
+void Buffer<T>::setLabel(string l)
 {
     //cout << "\n BUFFER LABEL: " << l << endl;
     label = l;
 }
 
-string Buffer::getLabel() const
+template <typename T>
+string Buffer<T>::getLabel() const
 {
     return label;
 }
 
-void Buffer::Print()
+template <typename T>
+void Buffer<T>::Print()
 {
-    queue<Flit> m = buffer;
-
-    string bstr = "";
-   
-
-    char  t[] = "HBT";
-
-    cout << sc_time_stamp().to_double() / GlobalParams::clock_period_ps << "\t";
-    cout << label << " QUEUE *[";
-    while (!(m.empty()))
-    {
-	Flit f = m.front();
-	m.pop();
-	cout << bstr << t[f.flit_type] << f.sequence_no <<  "(" << f.dst_id << ") | ";
-    }
-    cout << "]*" << endl;
-    cout << endl;
+//    queue<T> m = buffer;
+//
+//    string bstr = "";
+//
+//
+//    char  t[] = "HBT";
+//
+//    cout << sc_time_stamp().to_double() / GlobalParams::clock_period_ps << "\t";
+//    cout << label << " QUEUE *[";
+//    while (!(m.empty()))
+//    {
+//	T f = m.front();
+//	m.pop();
+//	cout << bstr << t[f.flit_type] << f.sequence_no <<  "(" << f.dst_id << ") | ";
+//    }
+//    cout << "]*" << endl;
+//    cout << endl;
 }
 
-
-void Buffer::deadlockCheck()
+template <typename T>
+void Buffer<T>::deadlockCheck()
 {
     // TOOD: add as parameter
-    int check_threshold = 50000;
-
-    if (IsEmpty()) return;
-
-    Flit f = buffer.front();
-    int seq = f.sequence_no;
-
-    if (last_front_flit_seq==seq)
-    {
-	full_cycles_counter++;
-    }
-    else
-    {
-	if (deadlock_detected) 
-	{
-	    cout << " WRONG DEADLOCK detection, please increase the check_threshold " << endl;
-	    assert(false);
-	}
-	last_front_flit_seq = seq;
-	full_cycles_counter=0;
-    }
-
-    if (full_cycles_counter>check_threshold && !deadlock_detected) 
-    {
-	double current_time = sc_time_stamp().to_double() / GlobalParams::clock_period_ps;
-	cout << "WARNING: DEADLOCK DETECTED at cycle " << current_time << " in buffer:  " << getLabel() << endl;
-	deadlock_detected = true;
-    }
+//    int check_threshold = 50000;
+//
+//    if (IsEmpty()) return;
+//
+//    T f = buffer.front();
+//    int seq = f.sequence_no;
+//
+//    if (last_front_flit_seq==seq)
+//    {
+//	full_cycles_counter++;
+//    }
+//    else
+//    {
+//	if (deadlock_detected)
+//	{
+//	    cout << " WRONG DEADLOCK detection, please increase the check_threshold " << endl;
+//	    assert(false);
+//	}
+//	last_front_flit_seq = seq;
+//	full_cycles_counter=0;
+//    }
+//
+//    if (full_cycles_counter>check_threshold && !deadlock_detected)
+//    {
+//	double current_time = sc_time_stamp().to_double() / GlobalParams::clock_period_ps;
+//	cout << "WARNING: DEADLOCK DETECTED at cycle " << current_time << " in buffer:  " << getLabel() << endl;
+//	deadlock_detected = true;
+//    }
 }
 
-
-bool Buffer::deadlockFree()
+template <typename T>
+bool Buffer<T>::deadlockFree()
 {
-    if (IsEmpty()) return true;
-
-    Flit f = buffer.front();
-    
-    int seq = f.sequence_no;
-
-
-    if (last_front_flit_seq==seq)
-    {
-	full_cycles_counter++;
-    }
-    else
-    {
-	last_front_flit_seq = seq;
-	full_cycles_counter=0;
-    }
-
-    if (full_cycles_counter>50000) 
-    {
-	return false;
-    }
+//    if (IsEmpty()) return true;
+//
+//    T f = buffer.front();
+//
+//    int seq = f.sequence_no;
+//
+//
+//    if (last_front_flit_seq==seq)
+//    {
+//	full_cycles_counter++;
+//    }
+//    else
+//    {
+//	last_front_flit_seq = seq;
+//	full_cycles_counter=0;
+//    }
+//
+//    if (full_cycles_counter>50000)
+//    {
+//	return false;
+//    }
 
     return true;
 
 }
 
-void Buffer::Disable()
+template <typename T>
+void Buffer<T>::Disable()
 {
   true_buffer = false;
 }
 
-void Buffer::SetMaxBufferSize(const unsigned int bms)
+template <typename T>
+void Buffer<T>::SetMaxBufferSize(const unsigned int bms)
 {
   assert(bms > 0);
 
   max_buffer_size = bms;
 }
 
-unsigned int Buffer::GetMaxBufferSize() const
+template <typename T>
+unsigned int Buffer<T>::GetMaxBufferSize() const
 {
   return max_buffer_size;
 }
 
-bool Buffer::IsFull() const
+template <typename T>
+bool Buffer<T>::IsFull() const
 {
   return buffer.size() == max_buffer_size;
 }
 
-bool Buffer::IsEmpty() const
+template <typename T>
+bool Buffer<T>::IsEmpty() const
 {
   return buffer.size() == 0;
 }
 
-void Buffer::Drop(const Flit & flit) const
+template <typename T>
+void Buffer<T>::Drop(const T & flit) const
 {
   assert(false);
 }
 
-void Buffer::Empty() const
+template <typename T>
+void Buffer<T>::Empty() const
 {
   assert(false);
 }
 
-void Buffer::Push(const Flit & flit)
+template <typename T>
+void Buffer<T>::Push(const T & flit)
 {
   SaveOccupancyAndTime();
 
   if (IsFull())
     Drop(flit);
   else
-    buffer.push(flit);
+    buffer.push_back(flit);
   
   UpdateMeanOccupancy();
 
@@ -174,9 +186,10 @@ void Buffer::Push(const Flit & flit)
     max_occupancy = buffer.size();
 }
 
-Flit Buffer::Pop()
+template <typename T>
+T Buffer<T>::Pop()
 {
-  Flit f;
+  T f;
 
   SaveOccupancyAndTime();
 
@@ -184,7 +197,7 @@ Flit Buffer::Pop()
     Empty();
   else {
     f = buffer.front();
-    buffer.pop();
+    buffer.pop_front();
   }
 
   UpdateMeanOccupancy();
@@ -192,9 +205,10 @@ Flit Buffer::Pop()
   return f;
 }
 
-Flit Buffer::Front() const
+template <typename T>
+T Buffer<T>::Front() const
 {
-  Flit f;
+  T f;
 
   if (IsEmpty())
     Empty();
@@ -204,24 +218,36 @@ Flit Buffer::Front() const
   return f;
 }
 
-unsigned int Buffer::Size() const
+template <typename T>
+void Buffer<T>::updateFront(const T& f)
+{
+    SaveOccupancyAndTime();
+    buffer.front() = f;
+    UpdateMeanOccupancy();
+}
+
+template <typename T>
+unsigned int Buffer<T>::Size() const
 {
   return buffer.size();
 }
 
-unsigned int Buffer::getCurrentFreeSlots() const
+template <typename T>
+unsigned int Buffer<T>::getCurrentFreeSlots() const
 {
   return (GetMaxBufferSize() - Size());
 }
 
-void Buffer::SaveOccupancyAndTime()
+template <typename T>
+void Buffer<T>::SaveOccupancyAndTime()
 {
   previous_occupancy = buffer.size();
   hold_time = (sc_time_stamp().to_double() / GlobalParams::clock_period_ps) - last_event;
   last_event = sc_time_stamp().to_double() / GlobalParams::clock_period_ps;
 }
 
-void Buffer::UpdateMeanOccupancy()
+template <typename T>
+void Buffer<T>::UpdateMeanOccupancy()
 {
   double current_time = sc_time_stamp().to_double() / GlobalParams::clock_period_ps;
   if (current_time - GlobalParams::reset_time < GlobalParams::stats_warm_up_time)
@@ -233,10 +259,17 @@ void Buffer::UpdateMeanOccupancy()
   hold_time_sum += hold_time;
 }
 
-void Buffer::ShowStats(std::ostream & out)
+template <typename T>
+void Buffer<T>::ShowStats(std::ostream & out)
 {
-  if (true_buffer)
+    out<< setiosflags(ios::fixed) << setprecision(2);
+
+    if (true_buffer)
     out << "\t" << mean_occupancy << "\t" << max_occupancy;
   else
-    out << "\t\t";
+    out << "\t--\t--";
 }
+
+/************ Explicit Instantiate ***********/
+template class Buffer<Flit>;
+template class Buffer<MyPacket>;

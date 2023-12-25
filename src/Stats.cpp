@@ -18,6 +18,30 @@ void Stats::configure(const int node_id, const double _warm_up_time)
     warm_up_time = _warm_up_time;
 }
 
+void Stats::receivedPacket(const double arrival_time, const MyPacket & pkt)
+{
+    if (arrival_time - GlobalParams::reset_time < warm_up_time)
+        return;
+
+    int i = searchCommHistory(pkt.src_id);
+
+    if (i == -1) {
+        // first flit received from a given source
+        // initialize CommHist structure
+        CommHistory ch;
+
+        ch.src_id = pkt.src_id;
+        ch.total_received_flits = 0;
+        chist.push_back(ch);
+
+        i = chist.size() - 1;
+    }
+    chist[i].delays.push_back(arrival_time - pkt.timestamp);
+
+    chist[i].total_received_flits++;
+    chist[i].last_received_flit_time = arrival_time - warm_up_time;
+}
+
 void Stats::receivedFlit(const double arrival_time,
 			      const Flit & flit)
 {

@@ -55,17 +55,17 @@ int ReservationTable::checkReservation(const TReservation r, const int port_out)
 {
     /* Sanity Check for forbidden table status:
      * - same input/VC in a different output line */
-    for (int o=0;o<n_outputs;o++)
-    {
-	for (vector<TReservation>::size_type i=0;i<rtable[o].reservations.size(); i++)
-	{
-	    // In the current implementation this should never happen
-	    if (o!=port_out && rtable[o].reservations[i] == r)
-	    {
-		return RT_ALREADY_OTHER_OUT;
-	    }
-	}
-    }
+//    for (int o=0;o<n_outputs;o++)
+//    {
+//	for (vector<TReservation>::size_type i=0;i<rtable[o].reservations.size(); i++)
+//	{
+//	    // In the current implementation this should never happen
+//	    if (o!=port_out && rtable[o].reservations[i] == r)
+//	    {
+//		return RT_ALREADY_OTHER_OUT;
+//	    }
+//	}
+//    }
     
      /* On a given output entry, reservations must differ by VC
      *  Motivation: they will be interleaved cycle-by-cycle as index moves */

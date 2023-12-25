@@ -40,6 +40,7 @@ void Router::rxProcess()
 	// This process simply sees a flow of incoming flits. All arbitration
 	// and wormhole related issues are addressed in the txProcess()
 	//assert(false);
+
 	for (int i = 0; i < DIRECTIONS + 2; i++) {
 	    // To accept a new flit, the following conditions must match:
 	    // 1) there is an incoming request
@@ -48,17 +49,20 @@ void Router::rxProcess()
 
 	    if (req_rx[i].read() == 1 - current_level_rx[i])
 	    { 
-		Flit received_flit = flit_rx[i].read();
+		MyPacket received_flit = flit_rx[i].read();
 		//LOG<<"request opposite to the current_level, reading flit "<<received_flit<<endl;
 
 		int vc = received_flit.vc_id;
 
 		if (!buffer[i][vc].IsFull()) 
 		{
-
 		    // Store the incoming flit in the circular buffer
 		    buffer[i][vc].Push(received_flit);
 		    LOG << " Flit " << received_flit << " collected from Input[" << i << "][" << vc <<"]" << endl;
+            // debug
+             int now = sc_time_stamp().to_double() / GlobalParams::clock_period_ps;
+            // cout << "[Time_" << now << "] current:" << id2Coord(local_id) << " buffer[" << i << "][" << vc << "] Push, now size="
+            //<< buffer[i][vc].Size() << received_flit << endl;
 
 		    power.bufferRouterPush();
 
@@ -76,6 +80,10 @@ void Router::rxProcess()
 		    // should not happen with the new TBufferFullStatus control signals    
 		    // except for flit coming from local PE, which don't use it 
 		    LOG << " Flit " << received_flit << " buffer full Input[" << i << "][" << vc <<"]" << endl;
+            int now = sc_time_stamp().to_double() / GlobalParams::clock_period_ps;
+//            cout << "[Time_" << now << "] current:" << id2Coord(local_id) << " Flit " << received_flit
+//            << " Input[" << i << "][" << vc <<"]  full!!!" << endl;
+
 		    assert(i== DIRECTION_LOCAL);
 		}
 
@@ -83,8 +91,9 @@ void Router::rxProcess()
 	    ack_rx[i].write(current_level_rx[i]);
 	    // updates the mask of VCs to prevent incoming data on full buffers
 	    TBufferFullStatus bfs;
-	    for (int vc=0;vc<GlobalParams::n_virtual_channels;vc++)
-		bfs.mask[vc] = buffer[i][vc].IsFull();
+	    for (int vc=0;vc<GlobalParams::n_virtual_channels;vc++) {
+            bfs.mask[vc] = buffer[i][vc].IsFull();
+        }
 	    buffer_full_status_rx[i].write(bfs);
 	}
     }
@@ -103,7 +112,7 @@ void Router::txProcess()
 	}
     } 
   else 
-    { 
+    {
       // 1st phase: Reservation
       for (int j = 0; j < DIRECTIONS + 2; j++) 
 	{
@@ -119,59 +128,55 @@ void Router::txProcess()
 
 	      if (!buffer[i][vc].IsEmpty()) 
 	      {
-		  Flit flit = buffer[i][vc].Front();
-		  power.bufferRouterFront();
+		  MyPacket flit = buffer[i][vc].Front();
+          power.bufferRouterFront();
+          // prepare data for routing
 
-		  if (flit.flit_type == FLIT_TYPE_HEAD) 
-		    {
-		      // prepare data for routing
-		      RouteData route_data;
-		      route_data.current_id = local_id;
-		      //LOG<< "current_id= "<< route_data.current_id <<" for sending " << flit << endl;
-		      route_data.src_id = flit.src_id;
-		      route_data.dst_id = flit.dst_id;
-		      route_data.dir_in = i;
-		      route_data.vc_id = flit.vc_id;
+          RouteData route_data(flit, local_id, i);
 
-		      // TODO: see PER POSTERI (adaptive routing should not recompute route if already reserved)
-		      int o = route(route_data);
+          // TODO: see PER POSTERI (adaptive routing should not recompute route if already reserved
+          vector<int> outs;
 
-		      // manage special case of target hub not directly connected to destination
-		      if (o>=DIRECTION_HUB_RELAY)
-			  {
-		      	Flit f = buffer[i][vc].Pop();
-		      	f.hub_relay_node = o-DIRECTION_HUB_RELAY;
-		      	buffer[i][vc].Push(f);
-		      	o = DIRECTION_HUB;
-			  }
+          if (!flit.hasRouted) {
 
-		      TReservation r;
-		      r.input = i;
-		      r.vc = vc;
+              outs = route(route_data);
+              flit.hasRouted = 1;
+              for (auto o : outs) {
+                  flit.out_ports[o] = true;
+              }
+              buffer[i][vc].updateFront(flit);
+          } else { // 数据包中已有路由信息
+              for (int p=0; p < DIRECTIONS + 2; p++) {
+                  if (flit.out_ports[p]) {
+                      outs.push_back(p);
+                  }
+              }
+          }
 
-		      LOG << " checking availability of Output[" << o << "] for Input[" << i << "][" << vc << "] flit " << flit << endl;
+          TReservation r;
+          r.input = i;
+          r.vc = vc;
 
-		      int rt_status = reservation_table.checkReservation(r,o);
+          for (auto o : outs) {
+              LOG << " checking availability of Output[" << o << "] for Input[" << i << "][" << vc << "] flit " << flit
+                  << endl;
 
-		      if (rt_status == RT_AVAILABLE) 
-		      {
-			  LOG << " reserving direction " << o << " for flit " << flit << endl;
-			  reservation_table.reserve(r, o);
-		      }
-		      else if (rt_status == RT_ALREADY_SAME)
-		      {
-			  LOG << " RT_ALREADY_SAME reserved direction " << o << " for flit " << flit << endl;
-		      }
-		      else if (rt_status == RT_OUTVC_BUSY)
-		      {
-			  LOG << " RT_OUTVC_BUSY reservation direction " << o << " for flit " << flit << endl;
-		      }
-		      else if (rt_status == RT_ALREADY_OTHER_OUT)
-		      {
-			  LOG  << "RT_ALREADY_OTHER_OUT: another output previously reserved for the same flit " << endl;
-		      }
-		      else assert(false); // no meaningful status here
-		    }
+              int rt_status = reservation_table.checkReservation(r, o);
+
+              if (rt_status == RT_AVAILABLE) {
+                  LOG << " reserving direction " << o << " for flit " << flit << endl;
+                  reservation_table.reserve(r, o);
+              } else if (rt_status == RT_ALREADY_SAME) {
+                  LOG << " RT_ALREADY_SAME reserved direction " << o << " for flit " << flit << endl;
+              } else if (rt_status == RT_OUTVC_BUSY) {
+                  LOG << " RT_OUTVC_BUSY reservation direction " << o << " for flit " << flit << endl;
+//                  int now = sc_time_stamp().to_double() / GlobalParams::clock_period_ps;
+//                  cout << "[Time_" << now << "] current:" << id2Coord(local_id)
+//                  << " RT_OUTVC_BUSY reservation direction " << o << " for flit " << flit << endl;
+              } else if (rt_status == RT_ALREADY_OTHER_OUT) {
+                  LOG << "RT_ALREADY_OTHER_OUT: another output previously reserved for the same flit " << endl;
+              } else assert(false); // no meaningful status here
+          }
 		}
 	  }
 	    start_from_vc[i] = (start_from_vc[i]+1)%GlobalParams::n_virtual_channels;
@@ -181,13 +186,13 @@ void Router::txProcess()
 
       // 2nd phase: Forwarding
       //if (local_id==6) LOG<<"*TX*****local_id="<<local_id<<"__ack_tx[0]= "<<ack_tx[0].read()<<endl;
-      for (int i = 0; i < DIRECTIONS + 2; i++) 
+      for (int i = 0; i < DIRECTIONS + 2; i++)
       { 
 	  vector<pair<int,int> > reservations = reservation_table.getReservations(i);
-	  
+
 	  if (reservations.size()!=0)
 	  {
-
+          // 针对多个虚通道，如果只有一个vc，则reservations中只包含一个元素
 	      int rnd_idx = rand()%reservations.size();
 
 	      int o = reservations[rnd_idx].first;
@@ -197,42 +202,68 @@ void Router::txProcess()
 	      if (!buffer[i][vc].IsEmpty())  
 	      {
 		  // power contribution already computed in 1st phase
-		  Flit flit = buffer[i][vc].Front();
+		  MyPacket flit = buffer[i][vc].Front();
+
 		  //LOG<< "*****TX***Direction= "<<i<< "************"<<endl;
 		  //LOG<<"_cl_tx="<<current_level_tx[o]<<"req_tx="<<req_tx[o].read()<<" _ack= "<<ack_tx[o].read()<< endl;
-		  
 		  if ( (current_level_tx[o] == ack_tx[o].read()) &&
 		       (buffer_full_status_tx[o].read().mask[vc] == false) ) 
 		  {
 		      //if (GlobalParams::verbose_mode > VERBOSE_OFF) 
 		      LOG << "Input[" << i << "][" << vc << "] forwarded to Output[" << o << "], flit: " << flit << endl;
+              // -----debug------
+              int now = sc_time_stamp().to_double() / GlobalParams::clock_period_ps;
+              cout << "[Time_" << now << "] current:" << id2Coord(local_id) << " Input[" << i << "][" << vc << "] forwarded to Output[" << o << "], flit:  "<< flit;
+              if (o == DIRECTION_LOCAL) cout << " 到达";
+              cout << endl;
+
+              // modify for multicast and broadcast
+              flit.out_ports[o] = 0;
+              buffer[i][vc].updateFront(flit);
+              bool isAllSend = 1;
+              for (int o = 0; o < DIRECTIONS + 2; o++){
+                  if(flit.out_ports[o] == 1) {
+                      isAllSend = 0;
+                      break;
+                  }
+              }
+              if (isAllSend || flit.packet_type == MYPACKET_TYPE_UNICAST) {
+                  buffer[i][vc].Pop();
+                  //cout << "[Time_" << now << "] current:" << id2Coord(local_id) << " buffer[" << i << "][" << vc << "] Pop!, now size=" << buffer[i][vc].Size() << endl;
+              }
+
+              // 将在本节点的路由信息清除
+              flit.clearRouteInfo();
 
 		      flit_tx[o].write(flit);
 		      current_level_tx[o] = 1 - current_level_tx[o];
 		      req_tx[o].write(current_level_tx[o]);
-		      buffer[i][vc].Pop();
 
-		      if (flit.flit_type == FLIT_TYPE_TAIL)
-		      {
+
+
+		      // release after transmission
 			  TReservation r;
 			  r.input = i;
 			  r.vc = vc;
 			  reservation_table.release(r,o);
-		      }
+
 
 		      /* Power & Stats ------------------------------------------------- */
 		      if (o == DIRECTION_HUB) power.r2hLink();
 		      else
 			  power.r2rLink();
 
-		      power.bufferRouterPop();
+              if (isAllSend || flit.packet_type == MYPACKET_TYPE_UNICAST) {
+                  power.bufferRouterPop();
+              }
+		      // power.bufferRouterPop();
 		      power.crossBar();
 
 		      if (o == DIRECTION_LOCAL) 
 		      {
 			  power.networkInterface();
-			  LOG << "Consumed flit " << flit << endl;
-			  stats.receivedFlit(sc_time_stamp().to_double() / GlobalParams::clock_period_ps, flit);
+			  LOG << "Consumed packet " << flit << endl;
+			  stats.receivedPacket(sc_time_stamp().to_double() / GlobalParams::clock_period_ps, flit);
 			  if (GlobalParams:: max_volume_to_be_drained) 
 			  {
 			      if (drained_volume >= GlobalParams:: max_volume_to_be_drained)
@@ -255,11 +286,11 @@ void Router::txProcess()
 		      //LOG << " **DEBUG APB: current_level_tx: " << current_level_tx[o] << " ack_tx: " << ack_tx[o].read() << endl;
 		      LOG << " **DEBUG buffer_full_status_tx " << buffer_full_status_tx[o].read().mask[vc] << endl;
 
-		  	//LOG<<"END_NO_cl_tx="<<current_level_tx[o]<<"_req_tx="<<req_tx[o].read()<<" _ack= "<<ack_tx[o].read()<< endl;
-		      /*
-		      if (flit.flit_type == FLIT_TYPE_HEAD)
-			  reservation_table.release(i,flit.vc_id,o);
-			  */
+              if (buffer_full_status_tx[o].read().mask[vc] == true) {
+                  int now = sc_time_stamp().to_double() / GlobalParams::clock_period_ps;
+                  cout << "[Time_" << now << "] current:" << id2Coord(local_id)
+                  << " Cannot forward Input[" << i << "][" << vc << "] to Output[" << o << "] 满了, flit: " << flit << endl;
+              }
 		  }
 	      }
 	  } // if not reserved 
@@ -453,17 +484,18 @@ vector < int > Router::routingFunction(const RouteData & route_data)
 	return routingAlgorithm->route(this, route_data);
 }
 
-int Router::route(const RouteData & route_data)
+vector<int> Router::route(const RouteData& route_data)
 {
-
-    if (route_data.dst_id == local_id)
-	return DIRECTION_LOCAL;
-
+    if (route_data.dst_id == local_id) {
+        return {DIRECTION_LOCAL};
+    }
     power.routing();
-    vector < int >candidate_channels = routingFunction(route_data);
+    vector < int > candidate_channels = routingFunction(route_data);
 
-    power.selection();
-    return selectionFunction(candidate_channels, route_data);
+    return candidate_channels;
+//
+//    power.selection();
+//    return selectionFunction(candidate_channels, route_data);
 }
 
 void Router::NoP_report() const
@@ -634,9 +666,11 @@ bool Router::inCongestion()
 
 void Router::ShowBuffersStats(std::ostream & out)
 {
-  for (int i=0; i<DIRECTIONS+2; i++)
-      for (int vc=0; vc<GlobalParams::n_virtual_channels;vc++)
-	    buffer[i][vc].ShowStats(out);
+  out << "         ";
+  for (int i=0; i<DIRECTIONS+1; i++)
+      for (int vc=0; vc<GlobalParams::n_virtual_channels;vc++) {
+          buffer[i][vc].ShowStats(out);
+      }
 }
 
 

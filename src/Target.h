@@ -56,7 +56,7 @@ struct Target: sc_module
   int   n_trans;
   bool  response_in_progress;
 
-  Buffer buffer_rx;
+  Buffer<Flit> buffer_rx;
 
   Flit get_payload();
 

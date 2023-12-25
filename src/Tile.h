@@ -28,23 +28,23 @@ SC_MODULE(Tile)
 
     int local_id; // Unique ID
 
-    sc_in <Flit> flit_rx[DIRECTIONS];	// The input channels
+    sc_in <MyPacket> flit_rx[DIRECTIONS];	// The input channels
     sc_in <bool> req_rx[DIRECTIONS];	        // The requests associated with the input channels
     sc_out <bool> ack_rx[DIRECTIONS];	        // The outgoing ack signals associated with the input channels
     sc_out <TBufferFullStatus> buffer_full_status_rx[DIRECTIONS];
 
-    sc_out <Flit> flit_tx[DIRECTIONS];	// The output channels
+    sc_out <MyPacket> flit_tx[DIRECTIONS];	// The output channels
     sc_out <bool> req_tx[DIRECTIONS];	        // The requests associated with the output channels
     sc_in <bool> ack_tx[DIRECTIONS];	        // The outgoing ack signals associated with the output channels
     sc_in <TBufferFullStatus> buffer_full_status_tx[DIRECTIONS];
 
     // hub specific ports
-    sc_in <Flit> hub_flit_rx;	// The input channels
+    sc_in <MyPacket> hub_flit_rx;	// The input channels
     sc_in <bool> hub_req_rx;	        // The requests associated with the input channels
     sc_out <bool> hub_ack_rx;	        // The outgoing ack signals associated with the input channels
     sc_out <TBufferFullStatus> hub_buffer_full_status_rx;
 
-    sc_out <Flit> hub_flit_tx;	// The output channels
+    sc_out <MyPacket> hub_flit_tx;	// The output channels
     sc_out <bool> hub_req_tx;	        // The requests associated with the output channels
     sc_in <bool> hub_ack_tx;	        // The outgoing ack signals associated with the output channels
     sc_in <TBufferFullStatus> hub_buffer_full_status_tx;	
@@ -60,12 +60,12 @@ SC_MODULE(Tile)
     sc_signal <int> free_slots_neighbor_local;
 
     // Signals required for Router-PE connection
-    sc_signal <Flit> flit_rx_local;	
+    sc_signal <MyPacket> flit_rx_local;
     sc_signal <bool> req_rx_local;     
     sc_signal <bool> ack_rx_local;
     sc_signal <TBufferFullStatus> buffer_full_status_rx_local;
 
-    sc_signal <Flit> flit_tx_local;
+    sc_signal <MyPacket> flit_tx_local;
     sc_signal <bool> req_tx_local;
     sc_signal <bool> ack_tx_local;
     sc_signal <TBufferFullStatus> buffer_full_status_tx_local;

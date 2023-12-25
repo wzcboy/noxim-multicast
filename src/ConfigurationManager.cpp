@@ -569,6 +569,12 @@ void parseCmdLine(int arg_num, char *arg_vet[])
 		else if (!strcmp(traffic, "ulocal"))
 		    GlobalParams::traffic_distribution =
 			TRAFFIC_ULOCAL;
+        else if (!strcmp(traffic, "multicast"))
+            GlobalParams::traffic_distribution =
+            TRAFFIC_MULTICAST;
+        else if (!strcmp(traffic, "test"))
+            GlobalParams::traffic_distribution =
+            TRAFFIC_TEST;
 		else if (!strcmp(traffic, "table")) {
 		    GlobalParams::traffic_distribution =
 			TRAFFIC_TABLE_BASED;

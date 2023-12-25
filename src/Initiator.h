@@ -56,7 +56,7 @@ struct Initiator: sc_module
   // custom
   sc_event start_request_event;
 
-  Buffer buffer_tx;
+  Buffer<Flit> buffer_tx;
   Flit flit_payload; 
 
     private: 

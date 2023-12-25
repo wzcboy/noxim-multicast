@@ -23,7 +23,8 @@ void ProcessingElement::rxProcess()
 	current_level_rx = 0;
     } else {
 	if (req_rx.read() == 1 - current_level_rx) {
-	    Flit flit_tmp = flit_rx.read();
+	    MyPacket flit_tmp = flit_rx.read();
+        // ...数据包暂时不作处理
 	    current_level_rx = 1 - current_level_rx;	// Negate the old value for Alternating Bit Protocol (ABP)
 	}
 	ack_rx.write(current_level_rx);
@@ -37,7 +38,7 @@ void ProcessingElement::txProcess()
 	current_level_tx = 0;
 	transmittedAtPreviousCycle = false;
     } else {
-	Packet packet;
+	MyPacket packet;
 
 	if (canShot(packet)) {
 	    packet_queue.push(packet);
@@ -48,8 +49,9 @@ void ProcessingElement::txProcess()
 
 	if (ack_tx.read() == current_level_tx) {
 	    if (!packet_queue.empty()) {
-		Flit flit = nextFlit();	// Generate a new flit
-		flit_tx->write(flit);	// Send the generated flit
+		MyPacket pkt = packet_queue.front();	// Generate a new packet
+        packet_queue.pop();
+		flit_tx->write(pkt);	// Send the generated pkt
 		current_level_tx = 1 - current_level_tx;	// Negate the old value for Alternating Bit Protocol (ABP)
 		req_tx.write(current_level_tx);
 	    }
@@ -57,37 +59,37 @@ void ProcessingElement::txProcess()
     }
 }
 
-Flit ProcessingElement::nextFlit()
-{
-    Flit flit;
-    Packet packet = packet_queue.front();
+//Flit ProcessingElement::nextFlit()
+//{
+//    Flit flit;
+//    Packet packet = packet_queue.front();
+//
+//    flit.src_id = packet.src_id;
+//    flit.dst_id = packet.dst_id;
+//    flit.vc_id = packet.vc_id;
+//    flit.timestamp = packet.timestamp;
+//    flit.sequence_no = packet.size - packet.flit_left;
+//    flit.sequence_length = packet.size;
+//    flit.hop_no = 0;
+//    //  flit.payload     = DEFAULT_PAYLOAD;
+//
+//    flit.hub_relay_node = NOT_VALID;
+//
+//    if (packet.size == packet.flit_left)
+//	flit.flit_type = FLIT_TYPE_HEAD;
+//    else if (packet.flit_left == 1)
+//	flit.flit_type = FLIT_TYPE_TAIL;
+//    else
+//	flit.flit_type = FLIT_TYPE_BODY;
+//
+//    packet_queue.front().flit_left--;
+//    if (packet_queue.front().flit_left == 0)
+//	packet_queue.pop();
+//
+//    return flit;
+//}
 
-    flit.src_id = packet.src_id;
-    flit.dst_id = packet.dst_id;
-    flit.vc_id = packet.vc_id;
-    flit.timestamp = packet.timestamp;
-    flit.sequence_no = packet.size - packet.flit_left;
-    flit.sequence_length = packet.size;
-    flit.hop_no = 0;
-    //  flit.payload     = DEFAULT_PAYLOAD;
-
-    flit.hub_relay_node = NOT_VALID;
-
-    if (packet.size == packet.flit_left)
-	flit.flit_type = FLIT_TYPE_HEAD;
-    else if (packet.flit_left == 1)
-	flit.flit_type = FLIT_TYPE_TAIL;
-    else
-	flit.flit_type = FLIT_TYPE_BODY;
-
-    packet_queue.front().flit_left--;
-    if (packet_queue.front().flit_left == 0)
-	packet_queue.pop();
-
-    return flit;
-}
-
-bool ProcessingElement::canShot(Packet & packet)
+bool ProcessingElement::canShot(MyPacket & packet)
 {
    // assert(false);
     if(never_transmit) return false;
@@ -123,47 +125,55 @@ bool ProcessingElement::canShot(Packet & packet)
 	if (shot) {
 	    if (GlobalParams::traffic_distribution == TRAFFIC_RANDOM)
 		    packet = trafficRandom();
-        else if (GlobalParams::traffic_distribution == TRAFFIC_TRANSPOSE1)
-		    packet = trafficTranspose1();
-        else if (GlobalParams::traffic_distribution == TRAFFIC_TRANSPOSE2)
-    		packet = trafficTranspose2();
-        else if (GlobalParams::traffic_distribution == TRAFFIC_BIT_REVERSAL)
-		    packet = trafficBitReversal();
-        else if (GlobalParams::traffic_distribution == TRAFFIC_SHUFFLE)
-		    packet = trafficShuffle();
-        else if (GlobalParams::traffic_distribution == TRAFFIC_BUTTERFLY)
-		    packet = trafficButterfly();
-        else if (GlobalParams::traffic_distribution == TRAFFIC_LOCAL)
-		    packet = trafficLocal();
+//        else if (GlobalParams::traffic_distribution == TRAFFIC_TRANSPOSE1)
+//		    packet = trafficTranspose1();
+//        else if (GlobalParams::traffic_distribution == TRAFFIC_TRANSPOSE2)
+//    		packet = trafficTranspose2();
+//        else if (GlobalParams::traffic_distribution == TRAFFIC_BIT_REVERSAL)
+//		    packet = trafficBitReversal();
+//        else if (GlobalParams::traffic_distribution == TRAFFIC_SHUFFLE)
+//		    packet = trafficShuffle();
+//        else if (GlobalParams::traffic_distribution == TRAFFIC_BUTTERFLY)
+//		    packet = trafficButterfly();
+//        else if (GlobalParams::traffic_distribution == TRAFFIC_LOCAL)
+//		    packet = trafficLocal();
         else if (GlobalParams::traffic_distribution == TRAFFIC_ULOCAL)
 		    packet = trafficULocal();
+        else if (GlobalParams::traffic_distribution == TRAFFIC_MULTICAST)
+            packet = trafficMulticast();
+        else if (GlobalParams::traffic_distribution == TRAFFIC_TEST)
+            packet = trafficTest();
         else {
             cout << "Invalid traffic distribution: " << GlobalParams::traffic_distribution << endl;
             exit(-1);
         }
 	}
     } else {			// Table based communication traffic
-	if (never_transmit)
-	    return false;
-
-	bool use_pir = (transmittedAtPreviousCycle == false);
-	vector < pair < int, double > > dst_prob;
-	double threshold =
-	    traffic_table->getCumulativePirPor(local_id, (int) now, use_pir, dst_prob);
-
-	double prob = (double) rand() / RAND_MAX;
-	shot = (prob < threshold);
-	if (shot) {
-	    for (unsigned int i = 0; i < dst_prob.size(); i++) {
-		if (prob < dst_prob[i].second) {
-                    int vc = randInt(0,GlobalParams::n_virtual_channels-1);
-		    packet.make(local_id, dst_prob[i].first, vc, now, getRandomSize());
-		    break;
-		}
-	    }
-	}
+//	if (never_transmit)
+//	    return false;
+//
+//	bool use_pir = (transmittedAtPreviousCycle == false);
+//	vector < pair < int, double > > dst_prob;
+//	double threshold =
+//	    traffic_table->getCumulativePirPor(local_id, (int) now, use_pir, dst_prob);
+//
+//	double prob = (double) rand() / RAND_MAX;
+//	shot = (prob < threshold);
+//	if (shot) {
+//	    for (unsigned int i = 0; i < dst_prob.size(); i++) {
+//		if (prob < dst_prob[i].second) {
+//                    int vc = randInt(0,GlobalParams::n_virtual_channels-1);
+//		    packet.make(local_id, dst_prob[i].first, vc, now, getRandomSize());
+//		    break;
+//		}
+//	    }
+//	}
     }
-
+    // for debug
+//    Coord tmp(0, 2);
+//    if (packet.src_id == coord2Id(tmp))
+//        return shot;
+//    else return false;
     return shot;
 }
 
@@ -256,26 +266,86 @@ int roulette()
     return 1;
 }
 
-
-Packet ProcessingElement::trafficULocal()
+// 找到比输入id大的节点
+Coord findGreaterDestination(int id, int hops)
 {
-    Packet p;
+    int inc_y = 1;
+    int inc_x = 1;
+    Coord current = id2Coord(id);
+
+    for (int i=0; i<hops; i++) {
+        if (current.x== GlobalParams::mesh_dim_x-1)
+            inc_x = 0;
+
+        if (current.y==GlobalParams::mesh_dim_y-1)
+            inc_y = 0;
+
+        if (inc_x == 0) {
+            current.y += inc_y;
+        } else if (inc_y == 0) {
+            current.x += inc_x;
+        } else {
+            if (rand()%2)
+                current.x += inc_x;
+            else
+                current.y += inc_y;
+        }
+
+    }
+    return current;
+}
+
+MyPacket ProcessingElement::trafficULocal()
+{
+    MyPacket p;
+
+    p.packet_type = MYPACKET_TYPE_UNICAST;
     p.src_id = local_id;
 
     int target_hops = roulette();
-
-    p.dst_id = findRandomDestination(local_id,target_hops);
+    int dst_id = findRandomDestination(local_id,target_hops);
+    p.p0 = p.p1 = id2Coord(dst_id);
 
     p.timestamp = sc_time_stamp().to_double() / GlobalParams::clock_period_ps;
-    p.size = p.flit_left = getRandomSize();
     p.vc_id = randInt(0,GlobalParams::n_virtual_channels-1);
+    p.hasRouted = false;
 
     return p;
 }
 
-Packet ProcessingElement::trafficRandom()
+MyPacket ProcessingElement::trafficMulticast()
 {
-    Packet p;
+    MyPacket p;
+
+    p.packet_type = MYPACKET_TYPE_MULTICAST;
+    p.src_id = local_id;
+
+    int max_id = (GlobalParams::mesh_dim_x * GlobalParams::mesh_dim_y) - 1;
+    int leftTop_id;
+    do {
+        leftTop_id = randInt(0, max_id);
+    } while (leftTop_id == p.src_id);
+
+    // 产生1~3的随机数
+    int target_hops = (rand() % 3) + 1;
+    Coord rightDown = findGreaterDestination(leftTop_id, target_hops);
+
+    p.p0 = id2Coord(leftTop_id);
+    p.p1 = rightDown;
+
+    p.timestamp = sc_time_stamp().to_double() / GlobalParams::clock_period_ps;
+    p.vc_id = randInt(0,GlobalParams::n_virtual_channels-1);
+    p.hasRouted = false;
+    for (int i=0; i<DIRECTIONS+2; i++) {
+        p.out_ports[i] = 0;
+    }
+    return p;
+}
+
+MyPacket ProcessingElement::trafficRandom()
+{
+    MyPacket p;
+    p.packet_type = MYPACKET_TYPE_UNICAST;
     p.src_id = local_id;
     double rnd = rand() / (double) RAND_MAX;
     double range_start = 0.0;
@@ -287,15 +357,16 @@ Packet ProcessingElement::trafficRandom()
 	max_id = GlobalParams::n_delta_tiles-1; 
 
     // Random destination distribution
+    int dst_id;
     do {
-	p.dst_id = randInt(0, max_id);
+	dst_id = randInt(0, max_id);
 
 	// check for hotspot destination
 	for (size_t i = 0; i < GlobalParams::hotspots.size(); i++) {
 
 	    if (rnd >= range_start && rnd < range_start + GlobalParams::hotspots[i].second) {
 		if (local_id != GlobalParams::hotspots[i].first ) {
-		    p.dst_id = GlobalParams::hotspots[i].first;
+		    dst_id = GlobalParams::hotspots[i].first;
 		}
 		break;
 	    } else
@@ -309,25 +380,32 @@ Packet ProcessingElement::trafficRandom()
 	}
 #endif
 
-    } while (p.dst_id == p.src_id);
-
+    } while (dst_id == p.src_id);
+    p.p0 = p.p1 = id2Coord(dst_id);
     p.timestamp = sc_time_stamp().to_double() / GlobalParams::clock_period_ps;
-    p.size = p.flit_left = getRandomSize();
     p.vc_id = randInt(0,GlobalParams::n_virtual_channels-1);
-
+    p.hasRouted = false;
+    for (int i=0; i<DIRECTIONS+2; i++) {
+        p.out_ports[i] = 0;
+    }
     return p;
 }
 // TODO: for testing only
-Packet ProcessingElement::trafficTest()
+MyPacket ProcessingElement::trafficTest()
 {
-    Packet p;
+    MyPacket p;
+
+    p.packet_type = MYPACKET_TYPE_MULTICAST;
     p.src_id = local_id;
-    p.dst_id = 10;
+    p.p0 = Coord(3,0);
+    p.p1 = Coord(3,1);
 
     p.timestamp = sc_time_stamp().to_double() / GlobalParams::clock_period_ps;
-    p.size = p.flit_left = getRandomSize();
     p.vc_id = randInt(0,GlobalParams::n_virtual_channels-1);
-
+    p.hasRouted = false;
+    for (int i=0; i<DIRECTIONS+2; i++) {
+        p.out_ports[i] = 0;
+    }
     return p;
 }
 

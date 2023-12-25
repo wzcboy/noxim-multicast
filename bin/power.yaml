@@ -69,6 +69,7 @@ Energy:
             DELTA:  	 [1.28e-4, 6.30e-14]
             WEST_FIRST:  [1.28e-4, 6.30e-14]
             ODD_EVEN:    [1.32e-4, 6.60e-14]
+            REC_BROADCAST: [2.40e-4, 12.00e-14]
             TABLE_BASED: [2.40e-4, 12.00e-14]
 
 

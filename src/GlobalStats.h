@@ -90,6 +90,7 @@ class GlobalStats {
 
     double getReceivedIdealFlitRatio();
 
+    double getReceivedIdealPacketRatio();
 
 
 #ifdef TESTING

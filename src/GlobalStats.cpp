@@ -205,7 +205,7 @@ double GlobalStats::getAggregatedThroughput()
 {
     int total_cycles = GlobalParams::simulation_time - GlobalParams::stats_warm_up_time;
 
-    return (double)getReceivedFlits()/(double)(total_cycles);
+    return (double)getReceivedPackets()/(double)(total_cycles);
 }
 
 unsigned int GlobalStats::getReceivedPackets()
@@ -330,17 +330,17 @@ unsigned int GlobalStats::getWirelessPackets()
     unsigned int packets = 0;
 
     // Wireless noc
-    for (map<int, HubConfig>::iterator it = GlobalParams::hub_configuration.begin();
-            it != GlobalParams::hub_configuration.end();
-            ++it)
-    {
-	int hub_id = it->first;
-
-	map<int,Hub*>::const_iterator i = noc->hub.find(hub_id);
-	Hub * h = i->second;
-
-	packets+= h->wireless_communications_counter;
-    }
+//    for (map<int, HubConfig>::iterator it = GlobalParams::hub_configuration.begin();
+//            it != GlobalParams::hub_configuration.end();
+//            ++it)
+//    {
+//	int hub_id = it->first;
+//
+//	map<int,Hub*>::const_iterator i = noc->hub.find(hub_id);
+//	Hub * h = i->second;
+//
+//	packets+= h->wireless_communications_counter;
+//    }
     return packets;
 }
 
@@ -374,17 +374,17 @@ double GlobalStats::getDynamicPower()
     }
 
     // Wireless noc
-    for (map<int, HubConfig>::iterator it = GlobalParams::hub_configuration.begin();
-	    it != GlobalParams::hub_configuration.end();
-	    ++it)
-    {
-	int hub_id = it->first;
-
-	map<int,Hub*>::const_iterator i = noc->hub.find(hub_id);
-	Hub * h = i->second;
-
-	power+= h->power.getDynamicPower();
-    }
+//    for (map<int, HubConfig>::iterator it = GlobalParams::hub_configuration.begin();
+//	    it != GlobalParams::hub_configuration.end();
+//	    ++it)
+//    {
+//	int hub_id = it->first;
+//
+//	map<int,Hub*>::const_iterator i = noc->hub.find(hub_id);
+//	Hub * h = i->second;
+//
+//	power+= h->power.getDynamicPower();
+//    }
     return power;
 }
 
@@ -416,17 +416,17 @@ double GlobalStats::getStaticPower()
     }
 
     // Wireless noc
-    for (map<int, HubConfig>::iterator it = GlobalParams::hub_configuration.begin();
-            it != GlobalParams::hub_configuration.end();
-            ++it)
-    {
-	int hub_id = it->first;
-
-	map<int,Hub*>::const_iterator i = noc->hub.find(hub_id);
-	Hub * h = i->second;
-
-	power+= h->power.getStaticPower();
-    }
+//    for (map<int, HubConfig>::iterator it = GlobalParams::hub_configuration.begin();
+//            it != GlobalParams::hub_configuration.end();
+//            ++it)
+//    {
+//	int hub_id = it->first;
+//
+//	map<int,Hub*>::const_iterator i = noc->hub.find(hub_id);
+//	Hub * h = i->second;
+//
+//	power+= h->power.getStaticPower();
+//    }
     return power;
 }
 
@@ -493,13 +493,13 @@ void GlobalStats::showStats(std::ostream & out, bool detailed)
 
     //int total_cycles = GlobalParams::simulation_time - GlobalParams::stats_warm_up_time;
     out << "% Total received packets: " << getReceivedPackets() << endl;
-    out << "% Total received flits: " << getReceivedFlits() << endl;
-    out << "% Received/Ideal flits Ratio: " << getReceivedIdealFlitRatio() << endl;
-    out << "% Average wireless utilization: " << getWirelessPackets()/(double)getReceivedPackets() << endl;
+//    out << "% Total received flits: " << getReceivedFlits() << endl;
+    out << "% Received/Ideal packets Ratio: " << getReceivedIdealPacketRatio() << endl;
+    // out << "% Average wireless utilization: " << getWirelessPackets()/(double)getReceivedPackets() << endl;
     out << "% Global average delay (cycles): " << getAverageDelay() << endl;
     out << "% Max delay (cycles): " << getMaxDelay() << endl;
-    out << "% Network throughput (flits/cycle): " << getAggregatedThroughput() << endl;
-    out << "% Average IP throughput (flits/cycle/IP): " << getThroughput() << endl;
+    out << "% Network throughput (packets/cycle): " << getAggregatedThroughput() << endl;
+    out << "% Average IP throughput (packets/cycle/IP): " << getThroughput() << endl;
     out << "% Total energy (J): " << getTotalPower() << endl;
     out << "% \tDynamic energy (J): " << getDynamicPower() << endl;
     out << "% \tStatic energy (J): " << getStaticPower() << endl;
@@ -528,76 +528,76 @@ void GlobalStats::showPowerManagerStats(std::ostream & out)
     out << "%\tFraction of: TX Transceiver off (TTXoff), AntennaBufferTX off (ABTXoff) " << endl;
     out << "%\tHUB\tTTXoff\tABTXoff\t" << endl;
 
-    for (map<int, HubConfig>::iterator it = GlobalParams::hub_configuration.begin();
-            it != GlobalParams::hub_configuration.end();
-            ++it)
-    {
-	int hub_id = it->first;
-
-	map<int,Hub*>::const_iterator i = noc->hub.find(hub_id);
-	Hub * h = i->second;
-
-	out << "\t" << hub_id << "\t" << std::fixed << (double)h->total_ttxoff_cycles/total_cycles << "\t";
-
-	int s = 0;
-	for (map<int,int>::iterator i = h->abtxoff_cycles.begin(); i!=h->abtxoff_cycles.end();i++) s+=i->second;
-
-	out << (double)s/h->abtxoff_cycles.size()/total_cycles << endl;
-    }
-
-    out << "];" << endl;
-
-
-
-    out << "powermanager_stats_rx = [" << endl;
-    out << "%\tFraction of: RX Transceiver off (TRXoff), AntennaBufferRX off (ABRXoff), BufferToTile off (BTToff) " << endl;
-    out << "%\tHUB\tTRXoff\tABRXoff\tBTToff\t" << endl;
-
-
-
-    for (map<int, HubConfig>::iterator it = GlobalParams::hub_configuration.begin();
-            it != GlobalParams::hub_configuration.end();
-            ++it)
-    {
-	string bttoff_str;
-
-	out.precision(4);
-
-	int hub_id = it->first;
-
-	map<int,Hub*>::const_iterator i = noc->hub.find(hub_id);
-	Hub * h = i->second;
-
-	out << "\t" << hub_id << "\t" << std::fixed << (double)h->total_sleep_cycles/total_cycles << "\t";
-
-	int s = 0;
-	for (map<int,int>::iterator i = h->buffer_rx_sleep_cycles.begin();
-		i!=h->buffer_rx_sleep_cycles.end();i++)
-	    s+=i->second;
-
-	out << (double)s/h->buffer_rx_sleep_cycles.size()/total_cycles << "\t";
-
-	s = 0;
-	for (map<int,int>::iterator i = h->buffer_to_tile_poweroff_cycles.begin();
-		i!=h->buffer_to_tile_poweroff_cycles.end();i++)
-	{
-	    double bttoff_fraction = i->second/(double)total_cycles;
-	    s+=i->second;
-	    if (bttoff_fraction<0.25)
-		bttoff_str+=" ";
-	    else if (bttoff_fraction<0.5)
-		    bttoff_str+=".";
-	    else if (bttoff_fraction<0.75)
-		    bttoff_str+="o";
-	    else if (bttoff_fraction<0.90)
-		    bttoff_str+="O";
-	    else 
-		bttoff_str+="0";
-	    
-
-	}
-	out << (double)s/h->buffer_to_tile_poweroff_cycles.size()/total_cycles << "\t" << bttoff_str << endl;
-    }
+//    for (map<int, HubConfig>::iterator it = GlobalParams::hub_configuration.begin();
+//            it != GlobalParams::hub_configuration.end();
+//            ++it)
+//    {
+//	int hub_id = it->first;
+//
+//	map<int,Hub*>::const_iterator i = noc->hub.find(hub_id);
+//	Hub * h = i->second;
+//
+//	out << "\t" << hub_id << "\t" << std::fixed << (double)h->total_ttxoff_cycles/total_cycles << "\t";
+//
+//	int s = 0;
+//	for (map<int,int>::iterator i = h->abtxoff_cycles.begin(); i!=h->abtxoff_cycles.end();i++) s+=i->second;
+//
+//	out << (double)s/h->abtxoff_cycles.size()/total_cycles << endl;
+//    }
+//
+//    out << "];" << endl;
+//
+//
+//
+//    out << "powermanager_stats_rx = [" << endl;
+//    out << "%\tFraction of: RX Transceiver off (TRXoff), AntennaBufferRX off (ABRXoff), BufferToTile off (BTToff) " << endl;
+//    out << "%\tHUB\tTRXoff\tABRXoff\tBTToff\t" << endl;
+//
+//
+//
+//    for (map<int, HubConfig>::iterator it = GlobalParams::hub_configuration.begin();
+//            it != GlobalParams::hub_configuration.end();
+//            ++it)
+//    {
+//	string bttoff_str;
+//
+//	out.precision(4);
+//
+//	int hub_id = it->first;
+//
+//	map<int,Hub*>::const_iterator i = noc->hub.find(hub_id);
+//	Hub * h = i->second;
+//
+//	out << "\t" << hub_id << "\t" << std::fixed << (double)h->total_sleep_cycles/total_cycles << "\t";
+//
+//	int s = 0;
+//	for (map<int,int>::iterator i = h->buffer_rx_sleep_cycles.begin();
+//		i!=h->buffer_rx_sleep_cycles.end();i++)
+//	    s+=i->second;
+//
+//	out << (double)s/h->buffer_rx_sleep_cycles.size()/total_cycles << "\t";
+//
+//	s = 0;
+//	for (map<int,int>::iterator i = h->buffer_to_tile_poweroff_cycles.begin();
+//		i!=h->buffer_to_tile_poweroff_cycles.end();i++)
+//	{
+//	    double bttoff_fraction = i->second/(double)total_cycles;
+//	    s+=i->second;
+//	    if (bttoff_fraction<0.25)
+//		bttoff_str+=" ";
+//	    else if (bttoff_fraction<0.5)
+//		    bttoff_str+=".";
+//	    else if (bttoff_fraction<0.75)
+//		    bttoff_str+="o";
+//	    else if (bttoff_fraction<0.90)
+//		    bttoff_str+="O";
+//	    else
+//		bttoff_str+="0";
+//
+//
+//	}
+//	out << (double)s/h->buffer_to_tile_poweroff_cycles.size()/total_cycles << "\t" << bttoff_str << endl;
+//    }
 
     out << "];" << endl;
 
@@ -630,21 +630,21 @@ void GlobalStats::showPowerBreakDown(std::ostream & out)
 	}
     }
 
-    for (map<int, HubConfig>::iterator it = GlobalParams::hub_configuration.begin();
-	    it != GlobalParams::hub_configuration.end();
-	    ++it)
-    {
-	int hub_id = it->first;
-
-	map<int,Hub*>::const_iterator i = noc->hub.find(hub_id);
-	Hub * h = i->second;
-
-	updatePowerBreakDown(power_dynamic, 
-		h->power.getDynamicPowerBreakDown());
-
-	updatePowerBreakDown(power_static, 
-		h->power.getStaticPowerBreakDown());
-    }
+//    for (map<int, HubConfig>::iterator it = GlobalParams::hub_configuration.begin();
+//	    it != GlobalParams::hub_configuration.end();
+//	    ++it)
+//    {
+//	int hub_id = it->first;
+//
+//	map<int,Hub*>::const_iterator i = noc->hub.find(hub_id);
+//	Hub * h = i->second;
+//
+//	updatePowerBreakDown(power_dynamic,
+//		h->power.getDynamicPowerBreakDown());
+//
+//	updatePowerBreakDown(power_static,
+//		h->power.getStaticPowerBreakDown());
+//    }
 
     printMap("power_dynamic",power_dynamic,out);
     printMap("power_static",power_static,out);
@@ -655,7 +655,7 @@ void GlobalStats::showPowerBreakDown(std::ostream & out)
 
 void GlobalStats::showBufferStats(std::ostream & out)
 {
-  out << "Router id\tBuffer N\t\tBuffer E\t\tBuffer S\t\tBuffer W\t\tBuffer L" << endl;
+  out << "\nRouter id\tBuffer N\tBuffer E\tBuffer S\tBuffer W\tBuffer L" << endl;
   out << "         \tMean\tMax\tMean\tMax\tMean\tMax\tMean\tMax\tMean\tMax" << endl;
   
   if (GlobalParams::topology == TOPOLOGY_MESH) 
@@ -694,6 +694,22 @@ double GlobalStats::getReceivedIdealFlitRatio()
     {
 	ratio = getReceivedFlits() /(GlobalParams::packet_injection_rate * (GlobalParams::min_packet_size +
 		    GlobalParams::max_packet_size)/2 * total_cycles * GlobalParams::n_delta_tiles);
+    }
+    return ratio;
+}
+
+double GlobalStats::getReceivedIdealPacketRatio()
+{
+    int total_cycles;
+    total_cycles= GlobalParams::simulation_time - GlobalParams::stats_warm_up_time;
+    double ratio;
+    if (GlobalParams::topology == TOPOLOGY_MESH)
+    {
+        ratio = getReceivedPackets() /(GlobalParams::packet_injection_rate * total_cycles * GlobalParams::mesh_dim_y * GlobalParams::mesh_dim_x);
+    }
+    else // other delta topologies
+    {
+        ratio = getReceivedPackets() /(GlobalParams::packet_injection_rate * total_cycles * GlobalParams::n_delta_tiles);
     }
     return ratio;
 }

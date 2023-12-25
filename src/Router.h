@@ -40,12 +40,12 @@ SC_MODULE(Router)
     sc_in <bool> reset;                           // The reset signal for the router
 
     // number of ports: 4 mesh directions + local + wireless 
-    sc_in <Flit> flit_rx[DIRECTIONS + 2];	  // The input channels 
+    sc_in <MyPacket> flit_rx[DIRECTIONS + 2];	  // The input channels
     sc_in <bool> req_rx[DIRECTIONS + 2];	  // The requests associated with the input channels
     sc_out <bool> ack_rx[DIRECTIONS + 2];	  // The outgoing ack signals associated with the input channels
     sc_out <TBufferFullStatus> buffer_full_status_rx[DIRECTIONS+2];
 
-    sc_out <Flit> flit_tx[DIRECTIONS + 2];   // The output channels
+    sc_out <MyPacket> flit_tx[DIRECTIONS + 2];   // The output channels
     sc_out <bool> req_tx[DIRECTIONS + 2];	  // The requests associated with the output channels
     sc_in <bool> ack_tx[DIRECTIONS + 2];	  // The outgoing ack signals associated with the output channels
     sc_in <TBufferFullStatus> buffer_full_status_tx[DIRECTIONS+2];
@@ -62,7 +62,7 @@ SC_MODULE(Router)
     int local_id;		                // Unique ID
     int routing_type;		                // Type of routing algorithm
     int selection_type;
-    BufferBank buffer[DIRECTIONS + 2];		// buffer[direction][virtual_channel] 
+    BufferPacketBank buffer[DIRECTIONS + 2];	// buffer[direction][virtual_channel]
     bool current_level_rx[DIRECTIONS + 2];	// Current level for Alternating Bit Protocol (ABP)
     bool current_level_tx[DIRECTIONS + 2];	// Current level for Alternating Bit Protocol (ABP)
     Stats stats;		                // Statistics
@@ -116,7 +116,7 @@ SC_MODULE(Router)
   private:
 
     // performs actual routing + selection
-    int route(const RouteData & route_data);
+    vector<int> route(const RouteData & route_data);
 
     // wrappers
     int selectionFunction(const vector <int> &directions,

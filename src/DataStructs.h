@@ -12,6 +12,7 @@
 #define _DATASTRUCS_H__
 
 #include <systemc.h>
+#include <utility>
 #include "GlobalParams.h"
 
 // Coord -- XY coordinates type of the Tile inside the Mesh
@@ -20,13 +21,24 @@ class Coord {
     int x;			// X coordinate
     int y;			// Y coordinate
 
+    Coord() {}
+    Coord(const int x_, const int y_) {
+        x = x_;
+        y = y_;
+    }
     inline bool operator ==(const Coord & coord) const {
 	return (coord.x == x && coord.y == y);
-}};
+    }
+};
 
 // FlitType -- Flit type enumeration
 enum FlitType {
     FLIT_TYPE_HEAD, FLIT_TYPE_BODY, FLIT_TYPE_TAIL
+};
+
+// MyPacketType
+enum MyPacketType {
+    MYPACKET_TYPE_UNICAST, MYPACKET_TYPE_MULTICAST, MYPACKET_TYPE_BROADCAST
 };
 
 // Payload -- Payload definition
@@ -65,14 +77,74 @@ struct Packet {
     }
 };
 
-// RouteData -- data required to perform routing
+// ** modify by wzc **
+struct MyPacket {
+    MyPacketType packet_type; // 包括单播，多播，广播
+    Coord p0; // 矩形区域的左上坐标
+    Coord p1; // 矩形区域的右下坐标
+    int src_id;
+    int vc_id;
+    Payload data;
+    double timestamp;		// SC timestamp at packet generation
+
+    // for multicast and broadcast
+    // 临时放置在数据包中，转发出去时可以去掉，节省带宽
+    bool hasRouted;
+    bool out_ports[DIRECTIONS + 2];
+
+    inline bool operator ==(const MyPacket & pkt) const {
+        return (pkt.packet_type == packet_type && pkt.p0 == p0 && pkt.p1 == p1 && pkt.src_id == src_id
+        && pkt.vc_id == vc_id && pkt.data == data && pkt.timestamp == timestamp);
+    }
+
+    void clearRouteInfo(){
+        hasRouted = false;
+        for (int i=0; i < DIRECTIONS + 2; i++) {
+            out_ports[i] = false;
+        }
+    }
+};
+
 struct RouteData {
+    MyPacketType packet_type;
     int current_id;
     int src_id;
     int dst_id;
+    Coord p0;
+    Coord p1;
     int dir_in;			// direction from which the packet comes from
     int vc_id;
+
+    // Constructors
+    RouteData() { }
+
+    RouteData(const MyPacket & pkt, const int local_id, const int in_port) {
+        packet_type = pkt.packet_type;
+        current_id = local_id;
+        dir_in = in_port;
+        // 解析数据包
+        src_id = pkt.src_id;
+        vc_id = pkt.vc_id;
+        p0 = pkt.p0;
+        p1 = pkt.p1;
+        if(pkt.packet_type == MYPACKET_TYPE_UNICAST || p0 == p1){
+            dst_id = (p0.y * GlobalParams::mesh_dim_x) + p0.x;;
+        } else {
+            // invalidate dst_id
+            dst_id = -1;
+        }
+    }
 };
+// ** end **
+
+// RouteData -- data required to perform routing
+//struct RouteData {
+//    int current_id;
+//    int src_id;
+//    int dst_id;
+//    int dir_in;			// direction from which the packet comes from
+//    int vc_id;
+//};
 
 struct ChannelStatus {
     int free_slots;		// occupied buffer slots
